@@ -9,49 +9,14 @@ from . import util
 # Variable for performing the required markdown (converting HTML into user friendly language)
 markdowner = Markdown()
 
-# Set up Django forms for our search function
+# Set up a Django form for our search function
 class Search(forms.Form):
-    result = forms.CharField(label="Search Results")
+    result = forms.CharField()
 
 # Default page for listing the articles currently in the encyclopedia
 def index(request):
-    # Attempting to implement the search functionality
-    # If the request method is post (i.e. the search box is submitted)
-    if request.method == "POST":
-        # Call the Django Search class
-        search = Search(request.POST)
-        # Create a list for any partial matches
-        partial_results = []
-        # Create a list of all of the current entries
-        current_entries = util.list_entries()
-        # If the search input is valid
-        if search.is_valid():
-            # Clean the data and store in a result variable
-            result = search.cleaned_data["search"]
-            # Loop through the list of entries
-            for i in current_entries:
-                # If the result matches one of the entries
-                if result.lower() == current_entries[i].lower():
-                    # Return that result (same as going to the page directly)
-                    return render(request, "encyclopedia/article.html", {
-                        "article": markdowner.convert(util.get_entry(result)),
-                        "title": result,
-                        "search": search
-                    })
-                # If the result partially matches one of the entries
-                if result.lower() in current_entries[i].lower():
-                    # Update the partial results list
-                    partial_results.append(i)
-            # If no result has been found, then render and return the search results list
-            return render(request, "encyclopedia/search.html", {
-                "result": result,
-                "partial_results": partial_results,
-                "search": Search()
-            })
-    # Else if request method is not POST, then bring up the index page
     return render(request, "encyclopedia/index.html", {
         "entries": util.list_entries(),
-        "search": Search()
     })
 
 # Page for when you go to a specific url with an article. Context is the title of the page passed in
@@ -65,4 +30,66 @@ def article(request, title):
         "title": title
     })
 
-def search(request, title):
+# Page that the user is directed to when using the search box
+def search(request):
+    # Check that the request method is POST (i.e. the user is submitting the form)
+    if request.method == "POST":
+
+        # Take in the data the user submitted and save it in search_data
+        search_data = Search(request.POST)
+
+        # Check that the submitted data is valid
+        if search_data.is_valid():
+
+            # Isolate the input that the user has provided
+            result = search_data.cleaned_data["result"]
+
+            # Get a list of the entries that we currently have in our wiki
+            current_entries = util.list_entries()
+
+            # Create a list for partial matching results
+            partial_results = []
+
+            # Loop through the current entries, checking if the search term (in 'result') is contained in each of the
+            # current titles. If yes, add to partial_results
+            for filename in current_entries:
+                if result.lower() in filename.lower():
+                    partial_results.append(filename)
+
+            # 'Pythonic' way of writing the above loop
+            # partial_results = [filename for filename in current_entries if result.lower() in filename.lower()]
+
+            # Check to see if anything exists in partial_results. If no, render the search.html page and
+            # display "No results found"
+            if len(partial_results) == 0:
+                return render(request, "encyclopedia/search.html", {
+                    "search_data": search_data,
+                    "error": "No results found",
+                    "no_results": True
+                })
+
+            # Else, check that both partial_results contains one result and this result matches the search term.
+            # If yes, display the article in question
+            elif len(partial_results) == 1 and partial_results[0].lower() == result.lower():
+                title = partial_results[0]
+                return article(request, title)
+
+            # Else, show the list of partially matching results with links to those articles
+            else:
+                # Check the list of partial_results to see if there is an exact match for the search result in the list.
+                # If yes, display the article in question
+
+                for filename in partial_results:
+                    if result.lower() == filename.lower():
+                        return article(request, filename)
+
+                # Otherwise if there is no exact matches, display the search.html page, passing in the partial_results
+                return render(request, "encyclopedia/search.html", {
+                    "partial_results": partial_results,
+                    "search_data": search_data
+                })
+
+        else:
+            return index(request)
+
+    return index(request)

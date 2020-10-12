@@ -1,16 +1,21 @@
 {% extends "encyclopedia/layout.html" %}
 
 {% block title %}
-    Search Results for {{result}}
+    Search Results for {{ search_data }}
 {% endblock %}
 
 {% block body %}
-    <h1>Results</h1>
+    {% if no_results == True %}
+        <h1>{{ error }}</h1>
 
-    <ul>
-        {% for entry in partial_results %}
-            <li><a href=/{{entry}}>{{ entry }}</a></li>
-        {% endfor %}
-    </ul>
+    {% else %}
+        <h1>Results</h1>
+
+        <ul>
+            {% for entry in partial_results %}
+                <li><a href=/wiki/{{entry}}>{{ entry }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 
 {% endblock %}
