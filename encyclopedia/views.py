@@ -1,6 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django import forms
+from django.core.exceptions import ValidationError
+from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext_lazy as _
 
 from markdown2 import Markdown
 
@@ -12,6 +15,26 @@ markdowner = Markdown()
 # Set up a Django form for our search function
 class Search(forms.Form):
     result = forms.CharField()
+
+# Set up a Django form for adding a new page
+class New(forms.Form):
+    title = forms.CharField(label="Title", required=True, widget=forms.Textarea)
+    body = forms.CharField(label="Body", required=True, widget=forms.Textarea)
+
+    # Function to validate that the new article being created does not have a duplicate title. Not currently working.
+    # Could not get the error message from this code snippet to show before the new form loaded. Will come back to this
+    # in the future. For now the error message is handled in the new article function itself
+    def clean_title(self):
+        title = self.cleaned_data['title']
+        current_entries = util.list_entries()
+
+        for current_title in current_entries:
+            if title.lower() == current_title.lower():
+                raise ValidationError(_(mark_safe("An article with this title already exists here. Please change the "
+                                                  "title of your article and resubmit or edit the existing article.")))
+
+        return title
+
 
 # Default page for listing the articles currently in the encyclopedia
 def index(request):
@@ -93,3 +116,38 @@ def search(request):
             return index(request)
 
     return index(request)
+
+# Page that user can use to create new articles
+def new(request):
+    # Check to see if the user is going to the New Article page, or if they are submitting information from this page
+    # If the method is post (i.e. they are saving their new article) then save and publish the article
+    args = {}
+    if request.method == "POST":
+        # Store the information from the New form in new_article
+        new_article = New(request.POST)
+
+        # Check submitted article is valid
+        if new_article.is_valid():
+            # Isolate the article title and body
+            title = new_article.cleaned_data["title"]
+            body = new_article.cleaned_data["body"]
+
+            # Create the new entry and redirect to the new entries page
+            util.save_entry(title, body)
+            return article(request, title)
+
+        # If it's not valid (i.e. the article title already exists) then stay on this page. TO DO - get information
+        # to stay on the page instead of losing it on unsuccessful submission
+        else:
+            return render(request, "encyclopedia/new.html", {
+                "errors": True,
+                "error_message": "An article with this title already exists here. Please change the title of your "
+                                 "article and resubmit or edit the existing article.",
+                "new": New()
+            })
+
+    # Else load the new article page
+    else:
+        return render(request, "encyclopedia/new.html", {
+            "new": New()
+        })

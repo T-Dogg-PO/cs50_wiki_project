@@ -1,0 +1,22 @@
+{% extends "encyclopedia/layout.html" %}
+{% load widget_tweaks %}
+
+{% block title %}
+    Create New Entry
+{% endblock %}
+
+{% block body %}
+    <form action="{% url 'new' %}" method="POST">
+        {% csrf_token %}
+        <h1>Page Title:</h1>
+        {{ new.title|add_class:'new_title' }}
+        {% if errors == True %}
+        <p>{{ error_message }}</p>
+        {% endif %}
+
+        <h1>Page Content:</h1>
+        {{ new.body }}
+        <br>
+        <input type="submit" value="Publish Article" formmethod="POST">
+    </form>
+{% endblock %}

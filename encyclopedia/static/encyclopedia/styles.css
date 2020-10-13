@@ -13,8 +13,9 @@ h1 {
 }
 
 textarea {
-    height: 90vh;
-    width: 80%;
+    height: 50vh;
+    width: 50%;
+    resize: both;
 }
 
 .main {
@@ -35,4 +36,20 @@ textarea {
 
 .sidebar h2 {
     margin-top: 5px;
+}
+
+.new_title {
+    height: 5vh;
+    width: 30%;
+    resize: horizontal;
+}
+
+.error {
+    background: #c51244 !important;
+    padding: 10px !important;
+    border-radius: 0 !important;
+    position: relative;
+    display: inline-block !important;
+    box-shadow: 1px 1px 1px #aaaaaa;
+    margin-top: 10px;
 }
