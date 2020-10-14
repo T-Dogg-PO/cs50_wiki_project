@@ -23,6 +23,11 @@
                     <a href="{% url 'new' %}">Create New Page</a>
                 </div>
                 <div>
+                    {% if edit_link == True %}
+                        <a href=/edit/{{title}}>Edit Page</a>
+                    {% endif %}
+                </div>
+                <div>
                     Random Page
                 </div>
                 {% block nav %}

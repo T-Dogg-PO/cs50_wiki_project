@@ -35,6 +35,9 @@ class New(forms.Form):
 
         return title
 
+class Edit(forms.Form):
+    content = forms.CharField(label="", required=True, widget=forms.Textarea)
+
 
 # Default page for listing the articles currently in the encyclopedia
 def index(request):
@@ -50,7 +53,8 @@ def article(request, title):
     # Render the articles html page, converting the markdown language on the way
     return render(request, "encyclopedia/article.html", {
         "article": markdowner.convert(util.get_entry(title)),
-        "title": title
+        "title": title,
+        "edit_link": True
     })
 
 # Page that the user is directed to when using the search box
@@ -136,18 +140,55 @@ def new(request):
             util.save_entry(title, body)
             return article(request, title)
 
-        # If it's not valid (i.e. the article title already exists) then stay on this page. TO DO - get information
-        # to stay on the page instead of losing it on unsuccessful submission
+        # If it's not valid (i.e. the article title already exists) then stay on this page. Auto fill the body of the
+        # page. TO DO - get title to stay on the page as well instead of losing it on unsuccessful submission
         else:
+            body = new_article.cleaned_data["body"]
             return render(request, "encyclopedia/new.html", {
                 "errors": True,
                 "error_message": "An article with this title already exists here. Please change the title of your "
                                  "article and resubmit or edit the existing article.",
-                "new": New()
+                "new": New(initial={"body": body})
             })
 
     # Else load the new article page
     else:
         return render(request, "encyclopedia/new.html", {
             "new": New()
+        })
+
+
+# Page for editing existing articles
+def edit(request, title):
+    # Get the current articles content
+    current_article = util.get_entry(title)
+
+    # Check if the user is submitting an edited article or navigating to the edit page for the first time
+    if request.method == "POST":
+        # Get the edited information from the Edit form
+        edited_article = Edit(request.POST)
+
+        # Ensure edited information is valid
+        if edited_article.is_valid():
+            # Save the cleaned data in variable called content
+            content = edited_article.cleaned_data["content"]
+
+            # Used the provided save_entry function (which overwrites the existing article with this title)
+            util.save_entry(title, content)
+
+            # Navigate back to the new article using the article function
+            return article(request, title)
+
+        # Else if not valid, reload the Edit page (for now)
+        else:
+            return render(request, "encyclopedia/edit.html", {
+                "title": title,
+                "edit": Edit(initial={'content': current_article})
+            })
+
+    # Else if request method is GET, load the edit page and pre-populate the form with the existing article
+    else:
+        return render(request, "encyclopedia/edit.html", {
+            "title": title,
+            "edit": Edit(initial={'content': current_article})
         })
