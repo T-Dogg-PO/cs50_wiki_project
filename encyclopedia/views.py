@@ -1,9 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+from random import choice
 
 from markdown2 import Markdown
 
@@ -49,7 +50,7 @@ def index(request):
 def article(request, title):
     # Check to see if article exists in the database. If not return error
     if not util.get_entry(title):
-        return HttpResponse("404 - article not found in database")
+        return HttpResponse("Error - article not found in database")
     # Render the articles html page, converting the markdown language on the way
     return render(request, "encyclopedia/article.html", {
         "article": markdowner.convert(util.get_entry(title)),
@@ -192,3 +193,12 @@ def edit(request, title):
             "title": title,
             "edit": Edit(initial={'content': current_article})
         })
+
+# Function for redirecting to a random article
+def random(request):
+    # Use the random.choice function to select a random article from the current list of entries
+    random_article = choice(util.list_entries())
+
+    # Use the redirect function (from django.shortcuts) to redirect to the page in question. This ensures the correct
+    # URL for the page in question.
+    return redirect('article', title = random_article)
